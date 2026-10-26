@@ -1,0 +1,23 @@
+name: Bug report
+description: Report a reproducible Veritas defect using synthetic data.
+labels: [bug]
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Describe expected and actual behavior. Do not include credentials or confidential documents.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include a minimal synthetic question/source and your browser and Node versions.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Relevant output
+      description: Include sanitized errors or screenshots only.

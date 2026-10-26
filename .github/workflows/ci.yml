@@ -1,0 +1,36 @@
+name: Verify Veritas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.18.0"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check source formatting
+        run: npm run format:check
+      - name: Run evidence-engine tests
+        run: npm test
+      - name: Type-check the application
+        run: npm run typecheck
+      - name: Build the application
+        run: npm run build
+      - name: Initialize local test database
+        run: npm run db:local
+      - name: Run authenticated API integration checks
+        run: npm run test:integration
