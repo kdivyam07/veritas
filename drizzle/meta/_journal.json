@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1792957265300,
+      "tag": "0000_useful_joystick",
+      "breakpoints": true
+    }
+  ]
+}
