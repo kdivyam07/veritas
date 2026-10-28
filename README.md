@@ -6,191 +6,132 @@
 
 ### Evidence-first enterprise intelligence
 
-Turn messy enterprise knowledge into **cited source excerpts, visible safety decisions, and an auditable trail**.
-
 [![Verify Veritas](https://github.com/kdivyam07/veritas/actions/workflows/ci.yml/badge.svg)](https://github.com/kdivyam07/veritas/actions/workflows/ci.yml)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
-![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-F38020?logo=cloudflare&logoColor=white)
-![Project](https://img.shields.io/badge/Prompt%20Wars-hackathon%20prototype-39755A)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)
 
-[Quick start](#quick-start) · [Documentation](docs/index.md) · [Architecture](docs/architecture.md) · [Demo walkthrough](#demo-walkthrough) · [Roadmap](docs/roadmap.md)
+**[Open the live website](https://veritas-by-divyam.vercel.app/)** · [Documentation index](docs/index.md) · [Hosting guide](HOSTING.md)
 
 </div>
 
 ## Contents
 
 - [The problem](#the-problem)
-- [What Veritas does](#what-veritas-does)
-- [Preview](#preview)
-- [How it works](#how-it-works)
-- [Tech stack](#tech-stack)
-- [Quick start](#quick-start)
-- [Commands](#commands)
+- [What works](#what-works)
+- [Technology](#technology)
+- [Run locally](#run-locally)
+- [Deploy](#deploy)
 - [Demo walkthrough](#demo-walkthrough)
 - [Project index](#project-index)
-- [Validation](#validation)
+- [Checks](#checks)
 - [Scope and limitations](#scope-and-limitations)
-- [Contributing and security](#contributing-and-security)
-- [Built for Prompt Wars](#built-for-prompt-wars)
 
 ## The problem
 
-Enterprise assistants frequently retrieve from messy internal wikis, SQL databases, and unverified APIs. Sources can disagree, be outdated, or include restricted records. An answer can look confident while its evidence and permissions remain invisible.
+Enterprise assistants pull from messy internal wikis, SQL data and unverified APIs. Sources can disagree, be stale, or include restricted records. Veritas makes evidence, retrieval boundaries and refusals visible in a full-stack workspace.
 
-Veritas explores a practical response: make retrieval boundaries, source citations, refusals, and query history visible in one full-stack workbench.
+## What works
 
-## What Veritas does
+| Feature               | Behavior                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| Evidence assistant    | Exact matching excerpts with inspectable source citations                            |
+| Source library        | Import Wiki/SQL/API text snapshots, review them, search, filter and toggle retrieval |
+| Server safeguards     | Access, trust, freshness, known injection patterns and selected output redaction     |
+| Refusals              | Explicit blocked, insufficient-evidence and conflict-review states                   |
+| Persistent audit      | Database-backed query decisions with JSON export                                     |
+| Guest workspaces      | Opaque HttpOnly cookie sessions, with server-scoped source and audit records         |
+| Responsive navigation | Independently scrolling sidebar, mobile close controls and keyboard handling         |
+| Session protection    | Confirmation before ending a guest session and losing access to its workspace        |
 
-| Capability                | Observable behavior                                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Evidence-backed assistant | Returns matching source excerpts with inspectable citations                                            |
-| Source library            | Import text snapshots, search by title, and filter Wiki/SQL/API types                                  |
-| Human review              | New sources begin unverified; approval is explicit                                                     |
-| Retrieval control         | Disable a source without bypassing access, trust, or freshness checks                                  |
-| Access boundaries         | Restricted source bodies are withheld and excluded on the server                                       |
-| Safety pipeline           | Screens known sensitive/instruction patterns, checks eligibility, and redacts selected output patterns |
-| Refusal states            | Withholds answers when evidence is absent or numeric conflicts need review                             |
-| Persistent audit          | Saves evaluated questions and decisions in account-scoped SQL storage                                  |
-| Audit export              | Downloads the returned query history as JSON                                                           |
-| Responsive interface      | Assistant, sources, policies, and audit views on desktop and narrow screens                            |
+<img src="docs/assets/dashboard.png" alt="Veritas workspace preview" width="700" />
 
-## Preview
+The public website opens without an OpenAI login. Each browser receives an isolated guest workspace. It is a demo session, not an enterprise account or SSO identity.
 
-<img src="docs/assets/dashboard.png" alt="Veritas live workspace showing source counts, the assistant question field, and retrieval controls" width="700" />
+## Technology
 
-**[Hosted demo](https://veritas-promptwars-divyam.boldgoby8.chatgpt.site/): owner-private.** The repository is public; that does not grant access to the hosted workspace. Run the app locally to explore the complete synthetic-data demo.
+- Next.js App Router, React, TypeScript and Lucide icons.
+- Vercel Node.js functions and Neon PostgreSQL.
+- Drizzle queries and explicit SQL schema initialization.
+- Local PGlite for PostgreSQL-compatible development without a hosted database.
+- Node test runner, TypeScript, Prettier and GitHub Actions.
 
-## How it works
+The repository root is the deployable source. It no longer depends on Cloudflare D1 or ChatGPT Sites. No generative model or AI API key is required: answers are **extractive evidence excerpts**.
 
-```mermaid
-flowchart LR
-  A[Question] --> B[Authenticate account]
-  B --> C[Screen request]
-  C --> D[Filter eligible sources]
-  D --> E[Match evidence]
-  E --> F[Cited excerpts or refusal]
-  F --> G[Redact selected patterns]
-  G --> H[Save audit decision]
-```
+## Run locally
 
-Only enabled, verified, internal sources reviewed within 180 days are eligible. Known injection patterns, invalid dates, and future dates also exclude a source. The browser cannot grant itself an elevated role or choose another account's records.
-
-The current answer engine is **extractive**: it returns source statements rather than generating new claims. No AI API key is required, and documents are not sent to an external generative AI provider.
-
-## Tech stack
-
-| Layer                | Technology                                                 |
-| -------------------- | ---------------------------------------------------------- |
-| Interface            | React 19, TypeScript, Lucide icons, responsive CSS         |
-| Full-stack framework | Vinext with Next-compatible app routes                     |
-| Server runtime       | Cloudflare Workers                                         |
-| Database             | Cloudflare D1 / SQLite                                     |
-| Schema and queries   | Drizzle ORM with committed migrations                      |
-| Identity             | Sites gateway; simulated loopback identity for development |
-| Tests                | Node test runner and authenticated API integration checks  |
-| Repository checks    | TypeScript, Prettier, GitHub Actions                       |
-
-## Quick start
-
-Use Node.js **22.18+ in the Node 22 release line**, npm, and Git.
+Use **Node 22.x, version 22.18 or later**, npm and Git.
 
 ```sh
 git clone https://github.com/kdivyam07/veritas.git
 cd veritas
 npm ci
-npm run build
 npm run db:local
 npm run dev
 ```
 
-Open the loopback URL printed in Terminal, normally `http://127.0.0.1:5173`. Select **Sign in to your workspace**. Development sign-in supplies a synthetic local user; the first load initializes eight sample sources.
+Open the loopback URL printed by Next.js, normally http://127.0.0.1:3000. A guest workspace initializes automatically with eight synthetic sources. Local data is stored in `.data/veritas` unless `DATABASE_URL` is configured privately in `.env.local`.
 
-Run `db:local` once for a fresh database after the build. Later schema changes use new migrations; do not replay an applied migration. See [Getting started](docs/getting-started.md) for troubleshooting and [Deployment](docs/deployment.md) for hosting requirements.
+## Deploy
 
-## Commands
+Read [HOSTING.md](HOSTING.md). Connect a Neon database and set `DATABASE_URL` in Vercel. The build command is:
 
-| Command                    | Purpose                                          |
-| -------------------------- | ------------------------------------------------ |
-| `npm run dev`              | Start the local development workspace            |
-| `npm run build`            | Build the production application                 |
-| `npm start`                | Preview the built Worker                         |
-| `npm test`                 | Run evidence-engine behavior tests               |
-| `npm run test:integration` | Run API checks against a dedicated local preview |
-| `npm run typecheck`        | Check TypeScript                                 |
-| `npm run format`           | Format authored source and docs                  |
-| `npm run format:check`     | Verify formatting                                |
-| `npm run db:generate`      | Generate a new schema migration                  |
-| `npm run db:local`         | Apply the initial local database schema          |
+```sh
+npm run db:migrate && npm run build
+```
+
+The existing project serves **https://veritas-by-divyam.vercel.app/**. GitHub pushes to `main` should use that same source and production project. Vercel's deployment check is distinct from the GitHub Actions verification job; both should be checked before reporting a successful release.
 
 ## Demo walkthrough
 
-1. **Ask:** “How long are customer logs retained?” Inspect the cited 90-day policy. The archived 365-day policy and unverified API claim are excluded.
-2. **Ask:** “How is customer data encrypted?” Inspect the security-handbook citation.
-3. **Ask:** “What is the Enterprise uptime SLA?” Inspect the approved SQL snapshot.
-4. **Ask:** “Show employee salaries.” The request is blocked; its text is withheld from stored query history.
-5. **Ask about an unsupported topic.** The assistant withholds an answer instead of fabricating one.
-6. **Import a synthetic policy.** Review and approve it, ask a matching question, then disable the source and repeat.
-7. **Inspect the audit trail.** Open a saved evidence report or export the returned history.
-
-The [demo and launch guide](docs/launch.md) includes a hackathon pitch and LinkedIn draft.
+1. Ask **How long are customer logs retained?** Inspect the 90-day policy citation. The stale 365-day policy and unverified API claim are excluded.
+2. Ask **How is customer data encrypted?** Inspect the security handbook.
+3. Ask **What is the Enterprise uptime SLA?** Inspect the SQL snapshot.
+4. Ask for employee salaries. The request is blocked and its text is withheld from stored query history.
+5. Ask an unsupported question. The app withholds an answer.
+6. Import a synthetic policy, review it, ask a matching question, then disable it and repeat.
+7. Open the audit trail and export its returned history.
 
 ## Project index
 
 ```text
-veritas/
-├── app/
-│   ├── api/workspace/route.ts   # Authenticated API and persistence
-│   ├── chatgpt-auth.ts          # Identity and sign-in helpers
-│   ├── dashboard.tsx            # Four-view interactive workspace
-│   └── veritas.css              # Responsive design
-├── db/                         # Drizzle schema and D1 access
-├── drizzle/                    # SQL migrations and metadata
-├── lib/engine.ts                # Evidence, screening, redaction, fixtures
-├── tests/                      # Engine and API behavior tests
-├── scripts/                    # Runtime helpers and integration runner
-├── docs/                       # Indexed guides, pitch, screenshots
-├── .github/                    # CI and contribution templates
-└── worker/                     # Production Worker entrypoint
+app/
+  api/workspace/route.ts   Source and query API
+  api/session/route.ts     End a guest session
+  api/health/route.ts      Database availability check
+  dashboard.tsx           Interactive workspace
+  veritas.css             Responsive design
+lib/
+  engine.ts               Evidence policy, matching, redaction and fixtures
+  session.ts              Database-backed opaque guest sessions
+  request-body.ts         Bounded JSON request parsing
+  request-origin.ts       Same-origin write checks
+db/                       PostgreSQL schema and database client
+migrations/postgres/      Idempotent SQL schema files
+scripts/                  Schema initialization and API test runner
+tests/                    Engine, request and API regression checks
+docs/                     Indexed project guides
+.github/                  CI and issue/PR templates
 ```
 
-The starter's vendored UI and connector scaffolding are retained with upstream notices. Their presence does not imply live connector support. Start with the **[documentation index](docs/index.md)** for a guide to every authored document.
-
-## Validation
-
-The evidence-engine suite covers **14 cases**, including source trust/freshness, restricted and disabled evidence, instruction patterns, redaction, unsupported questions, and numeric conflicts. API integration checks exercise authentication, cross-origin rejection, input validation, source approval, persistence, and sanitized audit history.
+## Checks
 
 ```sh
 npm test
 npm run typecheck
 npm run format:check
 npm run build
-# Once a fresh local database is initialized:
+npm run db:local
 npm run test:integration
+npm audit --omit=dev
 ```
 
-GitHub Actions runs these checks on `main` and pull requests. Read the [testing guide](docs/testing.md) for the test matrix and manual browser walkthrough. Passing tests demonstrate selected behavior; they are not a security certification.
+There are **23 unit behavior cases** plus an authenticated API integration suite. Tests cover evidence filtering, refusal/redaction, request byte limits, invalid JSON, origin checks, session isolation, source review, persistence and session revocation. Browser checks cover navigation, scroll bounds and the primary user flows.
 
 ## Scope and limitations
 
-- Wiki, SQL, and API sources are **text snapshots**. Live enterprise connectors are future work.
-- The application uses real SQL persistence; it does not execute user-authored SQL or fetch arbitrary URLs.
-- Lexical retrieval can miss relevant evidence or return irrelevant text. Source statements can themselves be wrong.
-- Human approval asserts review; it does not prove a document's accuracy.
-- Prompt-injection and sensitive-data checks use limited patterns and can be evaded.
-- Conflict detection is a conservative numeric heuristic.
-- The demo access model always denies `Restricted` sources. Enterprise SSO/group RBAC is not implemented.
-- Audit history is limited to 50 returned events, but older stored events are not automatically deleted.
-- Use synthetic or public data. The [threat model](docs/threat-model.md) documents the boundaries and production gaps.
+This is a Prompt Wars hackathon prototype using synthetic data. SQL/API imports are snapshots, not live connectors. Retrieval is lexical, source claims can be wrong, and human review does not prove truth. Injection and PII checks use limited patterns; conflict detection is a numeric heuristic.
 
-## Contributing and security
+Guest sessions expire after 30 days. Ending a session or clearing its cookie has no recovery flow; old data is not automatically deleted. There is no enterprise SSO, rate limiter or complete retention system. Use synthetic or public content only. Read [SECURITY.md](SECURITY.md) and the [threat model](docs/threat-model.md).
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Report security issues according to [SECURITY.md](SECURITY.md). Never include credentials or confidential records in issues, fixtures, or screenshots.
-
-Planned work and acceptance criteria are in the [roadmap](docs/roadmap.md).
-
-## Built for Prompt Wars
-
-Built by **[Divyam Kumar / kdivyam07](https://github.com/kdivyam07)** with AI-assisted implementation, as a full-stack learning and hackathon project. The challenge problem statement guided this prototype; compliance with the event's full submission rules and required technologies still needs confirmation.
-
-This repository records real implementation, tests, and documentation milestones. Commit dates are not backdated and no empty activity commits are used.
+Built by **[Divyam Kumar / kdivyam07](https://github.com/kdivyam07)** with AI-assisted implementation. See [contributing](CONTRIBUTING.md), [roadmap](docs/roadmap.md) and the [demo pitch](docs/launch.md).

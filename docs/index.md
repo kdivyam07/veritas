@@ -8,7 +8,7 @@
 | [API reference](api.md)               | Routes, actions, validation, and response examples    |
 | [Testing](testing.md)                 | Engine checks, API integration, and browser scenarios |
 | [Threat model](threat-model.md)       | Abuse cases, mitigations, and remaining risks         |
-| [Deployment](deployment.md)           | Sites hosting, private demo, and clone configuration  |
+| [Deployment](deployment.md)           | Vercel hosting and database configuration             |
 | [Roadmap](roadmap.md)                 | Prioritized next steps and acceptance criteria        |
 | [Demo and launch](launch.md)          | Hackathon pitch, walkthrough, and LinkedIn draft      |
 | [Contributing](../CONTRIBUTING.md)    | Development and pull request workflow                 |

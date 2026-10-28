@@ -10,6 +10,6 @@ Start with [local setup](docs/getting-started.md) and the [architecture](docs/ar
 6. For API changes, initialize the local database and run `npm run test:integration`.
 7. Submit a pull request explaining the behavior, validation, and limitations.
 
-Use descriptive commits such as `fix: exclude invalid source dates`. Do not make empty commits, backdate history, or add sensitive content to test fixtures.
+Use plain commit titles such as `Fix invalid source dates`. Do not make empty commits, backdate history, or add sensitive content to test fixtures.
 
-The repository includes a Vinext/Sites starter, vendored UI components, and runtime helpers. Preserve upstream license notices and avoid unrelated edits to vendored code. AI-assisted contributions are welcome when authors can explain the implementation and verify it.
+The repository root is the deployable Next.js/Vercel application. Keep guest-session boundaries on the server and review PostgreSQL schema changes carefully. AI-assisted contributions are welcome when authors can explain the implementation and verify it.

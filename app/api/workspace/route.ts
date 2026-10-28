@@ -1,9 +1,12 @@
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getWorkspaceUser } from "@/lib/session";
+import { isSameOrigin } from "@/lib/request-origin";
+import { BodyError, readJsonObject } from "@/lib/request-body";
 import { getDb } from "@/db";
 import { documents, events } from "@/db/schema";
 import { and, eq, desc } from "drizzle-orm";
-import { evaluate, injection, redact, seeds } from "@/lib/engine";
+import { evaluate, injection, redact, seeds, isEligibleSource } from "@/lib/engine";
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 const json = (data: unknown, status = 200) =>
   Response.json(data, {
     status,
@@ -11,9 +14,9 @@ const json = (data: unknown, status = 200) =>
   });
 export async function GET() {
   try {
-    const user = await getChatGPTUser();
+    const user = await getWorkspaceUser(true);
     if (!user) return json({ error: "Sign in to open your private workspace." }, 401);
-    const db = getDb();
+    const db = await getDb();
     await db
       .insert(documents)
       .values(seeds.map((s) => ({ ...s, owner: user.userId })))
@@ -27,6 +30,7 @@ export async function GET() {
       .limit(50);
     return json({
       user: { name: user.fullName || "Your workspace" },
+      eligibleCount: sources.filter((s) => isEligibleSource(s)).length,
       sources: sources.map(({ owner, ...s }) => ({
         ...s,
         content:
@@ -45,33 +49,24 @@ export async function GET() {
 }
 export async function POST(req: Request) {
   try {
-    const user = await getChatGPTUser();
+    const user = await getWorkspaceUser();
     if (!user) return json({ error: "Sign in required." }, 401);
-    const origin = req.headers.get("origin");
-    if (!origin || origin !== new URL(req.url).origin)
-      return json({ error: "Cross-origin request rejected." }, 403);
-    if (!req.headers.get("content-type")?.includes("application/json"))
-      return json({ error: "JSON required." }, 415);
-    if (Number(req.headers.get("content-length") || 0) > 30000)
-      return json({ error: "Request too large." }, 413);
-    const raw = await req.text();
-    if (raw.length > 30000) return json({ error: "Request too large." }, 413);
-    let body;
-    try {
-      body = JSON.parse(raw);
-    } catch {
-      return json({ error: "Invalid JSON." }, 400);
-    }
-    if (!body || typeof body !== "object" || Array.isArray(body))
-      return json({ error: "A JSON object is required." }, 400);
-    const db = getDb();
+    if (!isSameOrigin(req)) return json({ error: "Cross-origin request rejected." }, 403);
+    const body = await readJsonObject(req);
+    const db = await getDb();
     const owner = user.userId;
     if (body.action === "ask") {
       if (typeof body.question !== "string" || !body.question.trim() || body.question.length > 1200)
         return json({ error: "Enter a question between 1 and 1,200 characters." }, 400);
       const start = Date.now();
-      const sources = await db.select().from(documents).where(eq(documents.owner, owner));
-      const result = evaluate(body.question.trim(), sources);
+      const screening = evaluate(body.question.trim(), []);
+      const result =
+        screening.outcome === "Blocked"
+          ? screening
+          : evaluate(
+              body.question.trim(),
+              await db.select().from(documents).where(eq(documents.owner, owner)),
+            );
       const id = crypto.randomUUID();
       await db.insert(events).values({
         id,
@@ -94,6 +89,7 @@ export async function POST(req: Request) {
         typeof body.content !== "string" ||
         body.content.trim().length < 20 ||
         body.content.length > 20000 ||
+        typeof body.kind !== "string" ||
         !["Wiki", "SQL", "API"].includes(body.kind)
       )
         return json(
@@ -122,7 +118,7 @@ export async function POST(req: Request) {
       });
       return json({ ok: true });
     }
-    if (["toggle", "verify"].includes(body.action) && typeof body.id === "string") {
+    if ((body.action === "toggle" || body.action === "verify") && typeof body.id === "string") {
       const [source] = await db
         .select()
         .from(documents)
@@ -148,6 +144,7 @@ export async function POST(req: Request) {
     }
     return json({ error: "Unsupported action." }, 400);
   } catch (e) {
+    if (e instanceof BodyError) return json({ error: e.message }, e.status);
     console.error("Workspace action failed", e instanceof Error ? e.message : "Unknown");
     return json({ error: "Could not complete the action. Please retry." }, 503);
   }

@@ -1,5 +1,5 @@
-import { sqliteTable, text, integer, primaryKey } from "drizzle-orm/sqlite-core";
-export const documents = sqliteTable(
+import { pgTable, text, integer, primaryKey, index } from "drizzle-orm/pg-core";
+export const documents = pgTable(
   "documents",
   {
     id: text("id").notNull(),
@@ -12,13 +12,18 @@ export const documents = sqliteTable(
     updated: text("updated").notNull(),
     enabled: integer("enabled").notNull().default(1),
   },
-  (t) => [primaryKey({ columns: [t.id, t.owner] })],
+  (t) => [primaryKey({ columns: [t.id, t.owner] }), index("documents_owner").on(t.owner)],
 );
-export const events = sqliteTable("events", {
+export const events = pgTable("events", {
   id: text("id").primaryKey(),
   owner: text("owner").notNull(),
   question: text("question").notNull(),
   outcome: text("outcome").notNull(),
   detail: text("detail").notNull(),
   created: text("created").notNull(),
+});
+export const sessions = pgTable("sessions", {
+  tokenHash: text("token_hash").primaryKey(),
+  owner: text("owner").notNull(),
+  expires: text("expires").notNull(),
 });

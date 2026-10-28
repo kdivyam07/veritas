@@ -2,55 +2,42 @@
 
 [Documentation index](index.md)
 
-## Automated checks
-
 ```sh
 npm test
 npm run typecheck
 npm run format:check
 npm run build
-```
-
-For a fresh local database, after the build:
-
-```sh
 npm run db:local
 npm run test:integration
+npm audit --omit=dev
 ```
 
-The integration runner starts its own loopback development preview on port 5179, waits for readiness, runs the API checks with simulated local sign-in, and stops that server. It must not target the production demo. It creates synthetic test sources and query events in your local database; sources created by the tests are disabled at the end. Repeated runs use unique source text to avoid matching earlier fixtures.
+The unit suite contains **23 cases** across evidence and request handling. Integration checks start a dedicated Next.js preview on port 5179 and use synthetic guest sessions. Do not point them at production. Test imports are disabled at the end of each run; each run uses a separate guest owner.
 
-## Behavior matrix
+## Coverage
 
-| Scenario                                           | Expected result                                                      |
-| -------------------------------------------------- | -------------------------------------------------------------------- |
-| Retention question                                 | Cite the reviewed 90-day policy; exclude stale and unverified claims |
-| Encryption question                                | Cite the security handbook                                           |
-| Enterprise SLA question                            | Cite the SQL snapshot                                                |
-| Unknown topic                                      | Insufficient-evidence refusal                                        |
-| Salary or credential request                       | Blocked request                                                      |
-| Known instruction override                         | Blocked request or quarantined import                                |
-| Restricted source                                  | No source body returned or cited                                     |
-| Disabled source                                    | Excluded from retrieval                                              |
-| Invalid, future, or expired review date            | Excluded from retrieval                                              |
-| Differing numeric values in equally ranked sources | Human review required                                                |
-| Common email, ID, or secret patterns               | Redacted from returned excerpts                                      |
-| Anonymous API access                               | HTTP 401                                                             |
-| Cross-origin mutation                              | HTTP 403                                                             |
-| Unverified import                                  | Unusable until approved                                              |
-| Quarantined source approval                        | HTTP 403                                                             |
-| Approved import then disable                       | Retrieval succeeds, then refuses after disabling                     |
+- Correct citations for retention, encryption and SLA questions.
+- Refusal for unsupported, restricted, stale, disabled, invalid-date and known instruction-override evidence.
+- Selected output redaction and numeric conflict refusal.
+- Skipped pipeline stages after a blocked request.
+- Eligibility calculation shared between retrieval and dashboard counts.
+- Invalid JSON, wrong media types, multibyte and streaming body limits.
+- Valid loopback origins and rejected foreign origins.
+- Guest cookies, ignored spoofed identity headers and account crossover rejection.
+- Source import/review/toggle lifecycle, persistence and sanitized audit history.
+- Session revocation and health endpoint availability.
 
-## Manual browser walkthrough
+## Browser checklist
 
-1. Sign in to a fresh local workspace and confirm eight sample sources.
-2. Use each suggested question and inspect the citations.
-3. Ask for salaries and inspect the sanitized audit row.
-4. Import a synthetic policy, review it, and ask a matching question.
-5. Disable it and repeat the question.
-6. Search and filter the source list.
-7. Export audit JSON and check it contains only your current workspace's returned history.
-8. At a narrow viewport, open the navigation and check all four sections.
-9. Open a dialog, use Tab and Shift+Tab, and close with Escape.
+1. Ask each sample question and inspect citations.
+2. Submit a new question; the previous report must not appear under it.
+3. Import, review, search, filter and disable a synthetic source.
+4. Reload and verify persistence.
+5. Open an audit report and export JSON.
+6. On a short desktop screen, scroll the sidebar to its last controls.
+7. On mobile, open and close the drawer using its button, backdrop and Escape.
+8. Check Tab/Shift+Tab containment in the drawer and dialogs.
+9. Open session reset, cancel, and confirm the existing workspace stays accessible.
+10. Check the public production page and database health after deployment.
 
-The tests demonstrate selected behavior. They do not establish comprehensive injection resistance, complete PII detection, enterprise authorization, or production security.
+These checks establish selected behavior, not comprehensive security or semantic accuracy.

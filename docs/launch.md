@@ -4,7 +4,7 @@
 
 Repository: [kdivyam07/veritas](https://github.com/kdivyam07/veritas)
 
-Hosted demo: [Veritas](https://veritas-promptwars-divyam.boldgoby8.chatgpt.site/) (owner-private; local setup is available to public reviewers).
+Hosted demo: [Veritas](https://veritas-by-divyam.vercel.app/) (public demo with isolated guest workspaces).
 
 ## Problem
 
@@ -34,4 +34,4 @@ Explore the code and setup guide: https://github.com/kdivyam07/veritas
 
 #PromptWars #BuildInPublic #FullStackDevelopment #ResponsibleAI #GitHub
 
-Verify the competition's submission rules, deadline, required technologies and AI-use policy before submission; only the problem statement was provided for this build. The demo is private, so provide reviewers with local setup instructions unless its audience is explicitly changed by the owner.
+Verify the competition's submission rules, deadline, required technologies and AI-use policy before submission; only the problem statement was provided for this build. The demo is public and uses isolated guest sessions; provide local setup instructions as an alternative.

@@ -6,7 +6,15 @@ const port = "5179";
 const url = `http://127.0.0.1:${port}`;
 const server = spawn(
   process.execPath,
-  ["scripts/run-framework.mjs", "dev", "--hostname", "127.0.0.1", "--port", port],
+  [
+    "node_modules/next/dist/bin/next",
+    "dev",
+    "--webpack",
+    "--hostname",
+    "127.0.0.1",
+    "--port",
+    port,
+  ],
   { stdio: "inherit" },
 );
 let serverExited = false;

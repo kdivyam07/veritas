@@ -1,20 +1,25 @@
 # Security policy
 
-Veritas is a hackathon prototype. The current supported version is the code on `main`; it has not undergone an independent security audit.
+Veritas is a synthetic-data hackathon prototype. It has not undergone independent security review.
 
-## Reporting a vulnerability
+## Report a vulnerability
 
-Use the repository's **Security → Report a vulnerability** flow when available. If private reporting is unavailable, contact the maintainer through their GitHub profile before disclosing exploit details. Do not put tokens, private records, or a working exploit against a live organization in a public issue.
+Use GitHub's private vulnerability-reporting flow when enabled. Otherwise contact the maintainer through the GitHub profile before disclosing exploit details. Do not include credentials, private records, or a working exploit against a live organization in a public issue.
 
-Include the affected commit, expected boundary, minimal synthetic reproduction, and impact. No response-time SLA is promised.
+Include the affected commit, minimal synthetic reproduction, expected boundary and impact. No response-time SLA is promised.
 
-## Trust boundaries
+## Implemented boundaries
 
-- Hosted identity is trusted only when injected by the Sites gateway. The raw Worker must not be exposed as a separate public service with spoofable identity headers.
-- Loopback development sign-in is simulated and is not production authentication.
-- Every database read and mutation is scoped to the authenticated account ID.
-- `Restricted` content is denied for every demo user. Enterprise group-based RBAC is not implemented.
-- Pattern matching is incomplete for both prompt injection and sensitive data. Source approval does not prove truth.
-- No real company records should be imported into this demo.
+- Opaque 256-bit guest tokens live in HttpOnly, SameSite=Lax cookies, Secure in production. PostgreSQL stores token hashes.
+- Source/event queries and source mutations are scoped to the associated server-generated owner.
+- Client account IDs and former hosting-provider auth headers do not grant access.
+- Requests are screened and streamed JSON bodies are limited to 30,000 bytes. Writes require a same-origin Origin header.
+- Restricted and quarantined source bodies are withheld, and retrieval eligibility is enforced on the server.
+- Known sensitive patterns are redacted. Blocked question text is withheld from stored audit history.
+- Starting a new guest workspace requires UI confirmation and revokes the old token.
 
-Read the [threat model](docs/threat-model.md) and [testing guide](docs/testing.md) for implemented checks and their limits.
+## Limits
+
+Guest isolation is not enterprise identity verification. There is no SSO/group RBAC, request rate limiter, automatic data retention/deletion, or guest-account recovery. Pattern checks are incomplete. Source approval asserts review, not truth. Do not import confidential data.
+
+Read the [threat model](docs/threat-model.md). Keep dependencies patched and check `npm audit --omit=dev` before releases.

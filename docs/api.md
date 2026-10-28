@@ -5,11 +5,11 @@
 ## Common behavior
 
 - Endpoint: `/api/workspace`.
-- Authentication: identity injected by the Sites gateway, or development-only loopback sign-in.
+- Session: an opaque guest cookie backed by a hashed token in PostgreSQL. GET establishes a session when needed; writes require an existing valid session.
 - JSON responses with `Cache-Control: no-store`.
 - Writes require a same-origin `Origin` header and `Content-Type: application/json`.
 - A posted `owner`, role, or access label cannot select another account's records.
-- Request length is checked against a 30,000-character ceiling after reading, and the declared byte length is screened before reading. This is not a streaming body limiter.
+- Request bodies are limited to 30,000 bytes while streaming, including requests without Content-Length. JSON must be an object and use the application/json media type.
 
 ## GET
 
@@ -68,7 +68,7 @@ Toggles the enabled flag. Enabling does not override status, access, freshness, 
 | ------ | ----------------------------------------------------------- |
 | `200`  | Successful action or evaluated question, including refusals |
 | `400`  | Invalid input, malformed JSON, or unsupported action        |
-| `401`  | Missing authenticated identity                              |
+| `401`  | Missing or expired guest session                            |
 | `403`  | Cross-origin write or prohibited source approval            |
 | `404`  | Source absent from the authenticated user's workspace       |
 | `409`  | Demo source limit reached                                   |

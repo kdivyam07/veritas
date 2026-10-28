@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  turbopack: { root: process.cwd() },
+  outputFileTracingRoot: process.cwd(),
+  agentRules: false,
+  serverExternalPackages: ["@electric-sql/pglite"],
 };
 
 export default nextConfig;

@@ -87,6 +87,8 @@ export default function Home() {
     [sources, setSources] = useState<Source[]>([]),
     [history, setHistory] = useState<Event[]>([]),
     [loading, setLoading] = useState(true),
+    [hasWorkspace, setHasWorkspace] = useState(false),
+    [eligibleCount, setEligibleCount] = useState(0),
     [auth, setAuth] = useState(false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -99,6 +101,8 @@ export default function Home() {
     [add, setAdd] = useState(false),
     [help, setHelp] = useState(false),
     [mobile, setMobile] = useState(false),
+    [isNarrow, setIsNarrow] = useState(false),
+    [resetSession, setResetSession] = useState(false),
     [notice, setNotice] = useState("");
   const [title, setTitle] = useState(""),
     [kind, setKind] = useState("Wiki"),
@@ -110,10 +114,17 @@ export default function Home() {
         setAuth(true);
         return;
       }
-      const d = (await r.json()) as { error?: string; sources: Source[]; history: Event[] };
+      const d = (await r.json()) as {
+        error?: string;
+        sources: Source[];
+        history: Event[];
+        eligibleCount: number;
+      };
       if (!r.ok) throw Error(d.error);
       setSources(d.sources);
       setHistory(d.history);
+      setEligibleCount(d.eligibleCount);
+      setHasWorkspace(true);
       setAuth(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load workspace.");
@@ -125,6 +136,45 @@ export default function Home() {
     load();
   }, []);
   useEffect(() => {
+    const media = window.matchMedia("(max-width: 820px)");
+    const sync = () => {
+      setIsNarrow(media.matches);
+      if (!media.matches) setMobile(false);
+    };
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+  useEffect(() => {
+    if (!isNarrow || !mobile) return;
+    const sidebar = document.getElementById("workspace-sidebar");
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.getElementById("sidebar-close")?.focus();
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const nodes = Array.from(
+        sidebar?.querySelectorAll<HTMLElement>("a[href],button:not(:disabled)") || [],
+      );
+      const first = nodes[0],
+        last = nodes[nodes.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    sidebar?.addEventListener("keydown", trap);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      sidebar?.removeEventListener("keydown", trap);
+      if (window.matchMedia("(max-width: 820px)").matches)
+        document.querySelector<HTMLButtonElement>(".mobile-menu")?.focus();
+    };
+  }, [isNarrow, mobile]);
+  useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(""), 4000);
     return () => clearTimeout(t);
@@ -135,6 +185,7 @@ export default function Home() {
         setSelected(null);
         setAdd(false);
         setHelp(false);
+        setResetSession(false);
         setMobile(false);
       }
     };
@@ -142,7 +193,7 @@ export default function Home() {
     return () => window.removeEventListener("keydown", fn);
   }, []);
   useEffect(() => {
-    if (!selected && !add && !help) return;
+    if (!selected && !add && !help && !resetSession) return;
     const previous = document.activeElement as HTMLElement | null;
     const trap = (e: KeyboardEvent) => {
       if (e.key !== "Tab") return;
@@ -166,7 +217,7 @@ export default function Home() {
       document.removeEventListener("keydown", trap);
       previous?.focus();
     };
-  }, [selected, add, help]);
+  }, [selected, add, help, resetSession]);
   async function post(body: object) {
     const r = await fetch("/api/workspace", {
       method: "POST",
@@ -182,6 +233,7 @@ export default function Home() {
     setBusy(true);
     setError("");
     setAsked(q);
+    setAnswer(null);
     setQuestion(q);
     try {
       setAnswer(await post({ action: "ask", question: q }));
@@ -241,13 +293,7 @@ export default function Home() {
     URL.revokeObjectURL(url);
     setNotice("Audit exported.");
   }
-  const verified = sources.filter(
-    (s) =>
-      s.status === "Verified" &&
-      s.access === "Internal" &&
-      s.enabled &&
-      Date.now() - Date.parse(s.updated) < 180 * 86400000,
-  ).length;
+  const verified = eligibleCount;
   const filtered = sources.filter(
     (s) =>
       (filter === "All sources" || s.kind === filter) &&
@@ -256,7 +302,22 @@ export default function Home() {
   const denied = history.filter((e) => e.outcome !== "Grounded").length;
   return (
     <div className="app-shell">
-      <aside className={"sidebar " + (mobile ? "open" : "")}>
+      <aside
+        id="workspace-sidebar"
+        aria-label="Workspace navigation"
+        className={"sidebar " + (mobile ? "open" : "")}
+        inert={isNarrow && !mobile}
+      >
+        {isNarrow && (
+          <button
+            id="sidebar-close"
+            className="sidebar-close"
+            aria-label="Close navigation"
+            onClick={() => setMobile(false)}
+          >
+            <X size={20} />
+          </button>
+        )}
         <a className="brand" href="/" aria-label="Veritas home">
           <span className="brand-mark">
             <Layers3 size={25} />
@@ -310,23 +371,41 @@ export default function Home() {
             <ArrowUpRight size={14} />
           </button>
           <div className="profile">
-            <span className="avatar">D</span>
+            <span className="avatar">G</span>
             <div>
               <strong>Your private workspace</strong>
-              <small>Prompt Wars · Builder</small>
+              <small>Guest session · Demo</small>
             </div>
-            <a href="/signout-with-chatgpt?return_to=/" title="Sign out">
+            <button
+              title="Start a new guest workspace"
+              aria-label="Start a new guest workspace"
+              onClick={() => {
+                setMobile(false);
+                setResetSession(true);
+                setError("");
+              }}
+            >
               <LogOut size={16} />
-            </a>
+            </button>
           </div>
         </div>
       </aside>
-      <div className="main-shell">
+      {isNarrow && mobile && (
+        <button
+          className="sidebar-backdrop"
+          aria-label="Dismiss navigation"
+          tabIndex={-1}
+          onClick={() => setMobile(false)}
+        />
+      )}
+      <div className="main-shell" inert={isNarrow && mobile}>
         <header className="topbar">
           <div className="breadcrumbs">
             <button
               className="mobile-menu"
               aria-label="Open navigation"
+              aria-expanded={mobile}
+              aria-controls="workspace-sidebar"
               onClick={() => setMobile(!mobile)}
             >
               <Menu size={20} />
@@ -343,7 +422,7 @@ export default function Home() {
             <button className="icon-button" onClick={() => setHelp(true)} aria-label="Help">
               <CircleHelp size={19} />
             </button>
-            <span className="avatar small">D</span>
+            <span className="avatar small">G</span>
           </div>
         </header>
         <main>
@@ -370,7 +449,11 @@ export default function Home() {
               </p>
             </div>
             {tab === "Sources" ? (
-              <button className="primary" disabled={auth || loading} onClick={() => setAdd(true)}>
+              <button
+                className="primary"
+                disabled={auth || loading || !hasWorkspace}
+                onClick={() => setAdd(true)}
+              >
                 <Plus size={17} />
                 Add source
               </button>
@@ -405,12 +488,12 @@ export default function Home() {
               <ShieldCheck size={40} />
               <h2>Your knowledge stays yours.</h2>
               <p>
-                Sign in to open your isolated demo workspace with sample sources, saved queries, and
-                an audit trail.
+                Open your isolated guest workspace with sample sources, saved queries, and an audit
+                trail. Your session is stored in this browser.
               </p>
-              <a className="primary" href="/signin-with-chatgpt?return_to=/" target="_top">
-                Sign in to your workspace <ArrowRight size={17} />
-              </a>
+              <button className="primary" onClick={() => load()}>
+                Open guest workspace <ArrowRight size={17} />
+              </button>
               <small>No company accounts or API keys needed.</small>
             </section>
           ) : loading ? (
@@ -418,6 +501,25 @@ export default function Home() {
               <LoaderCircle className="spin" />
               Preparing your private workspace…
             </div>
+          ) : !hasWorkspace ? (
+            <section className="signin card" aria-live="polite">
+              <TriangleAlert size={36} />
+              <h2>Workspace unavailable</h2>
+              <p>
+                The workspace could not load. Retry to reconnect; your existing session will be
+                preserved.
+              </p>
+              <button
+                className="primary"
+                onClick={() => {
+                  setError("");
+                  setLoading(true);
+                  load();
+                }}
+              >
+                Retry connection <ArrowRight size={16} />
+              </button>
+            </section>
           ) : (
             <>
               <section className="stats">
@@ -915,20 +1017,29 @@ export default function Home() {
           {notice}
         </div>
       )}
-      {(selected || add || help) && (
+      {(selected || add || help || resetSession) && (
         <div
           className="modal-backdrop"
           onClick={() => {
             setSelected(null);
             setAdd(false);
             setHelp(false);
+            setResetSession(false);
           }}
         >
           <section
             className="modal card"
             role="dialog"
             aria-modal="true"
-            aria-label={add ? "Add a source" : selected ? "Source details" : "About Veritas"}
+            aria-label={
+              resetSession
+                ? "Start a new workspace"
+                : add
+                  ? "Add a source"
+                  : selected
+                    ? "Source details"
+                    : "About Veritas"
+            }
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -939,11 +1050,67 @@ export default function Home() {
                 setSelected(null);
                 setAdd(false);
                 setHelp(false);
+                setResetSession(false);
               }}
             >
               <X size={20} />
             </button>
-            {selected ? (
+            {resetSession ? (
+              <>
+                <span className="spark-icon">
+                  <LogOut size={22} />
+                </span>
+                <h2>Start a new workspace?</h2>
+                <p>
+                  This ends your current guest session. Your current imports and audit history will
+                  no longer be accessible from this browser. Export your audit first if you need a
+                  copy.
+                </p>
+                <div className="dialog-actions">
+                  <button
+                    className="secondary"
+                    onClick={() => setResetSession(false)}
+                    disabled={busy}
+                  >
+                    Keep my workspace
+                  </button>
+                  <button
+                    className="primary"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      setError("");
+                      try {
+                        const response = await fetch("/api/session", { method: "DELETE" });
+                        if (!response.ok)
+                          throw new Error("Could not end the session. Please retry.");
+                        setAnswer(null);
+                        setQuestion("");
+                        setAsked("");
+                        setSources([]);
+                        setHistory([]);
+                        setHasWorkspace(false);
+                        setEligibleCount(0);
+                        setResetSession(false);
+                        setLoading(true);
+                        await load();
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : "Could not end the session.");
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    {busy ? "Starting…" : "Start fresh"}
+                  </button>
+                </div>
+                {error && (
+                  <p className="modal-error" role="alert">
+                    {error}
+                  </p>
+                )}
+              </>
+            ) : selected ? (
               <>
                 <KindIcon kind={selected.kind} />
                 <h2>{selected.title}</h2>

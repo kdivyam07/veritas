@@ -151,6 +151,18 @@ function tokens(s: string) {
     ),
   ];
 }
+export function isEligibleSource(s: Source, now = Date.now()) {
+  const updated = Date.parse(s.updated);
+  return (
+    s.enabled === 1 &&
+    s.access === "Internal" &&
+    s.status === "Verified" &&
+    !injection.test(s.content) &&
+    Number.isFinite(updated) &&
+    now - updated < 180 * 86400000 &&
+    updated <= now
+  );
+}
 export function evaluate(question: string, sources: Source[], now = Date.now()): Answer {
   const checks = [
     {
@@ -179,17 +191,7 @@ export function evaluate(question: string, sources: Source[], now = Date.now()):
       detail: "Email, common secret and ID patterns are redacted.",
     },
   ];
-  const eligible = sources.filter(
-    (s) =>
-      s.enabled === 1 &&
-      s.access === "Internal" &&
-      s.status === "Verified" &&
-      !injection.test(s.content) &&
-      Number.isFinite(Date.parse(s.updated)) &&
-      now - Date.parse(s.updated) < 180 * 86400000 &&
-      Date.parse(s.updated) <= now,
-  );
-  const base = { citations: [], checks, excluded: sources.length - eligible.length };
+  const base = { citations: [], checks, excluded: sources.length };
   if (
     injection.test(question) ||
     /\b(passwords?|secrets?|api.?keys?|salary|salaries|payroll|compensation|social security)\b/i.test(
@@ -202,7 +204,10 @@ export function evaluate(question: string, sources: Source[], now = Date.now()):
       state: "blocked",
       detail: "Sensitive data or instruction override request detected.",
     };
-    checks[3].state = "skipped";
+    for (const index of [1, 2, 3]) {
+      checks[index].state = "skipped";
+      checks[index].detail = "Not used because request screening blocked this question.";
+    }
     return {
       ...base,
       outcome: "Blocked",
@@ -210,6 +215,8 @@ export function evaluate(question: string, sources: Source[], now = Date.now()):
         "This request includes sensitive data or asks for restricted information. Rephrase it as a policy question without credentials or personal details.",
     };
   }
+  const eligible = sources.filter((s) => isEligibleSource(s, now));
+  base.excluded = sources.length - eligible.length;
   const query = tokens(question);
   const ranked = eligible
     .map((s) => {
